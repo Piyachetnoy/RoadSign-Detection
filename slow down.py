@@ -3,17 +3,12 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-modelPath = 'E:/mythesis/03-Classification/Models/TSModelV3'
+modelPath = 'E:/mythesis/03-Classification/Models/TSModelV4'
 model = keras.models.load_model(modelPath)
 
-def returnUV(img):
-	luv = cv2.cvtColor(img,cv2.COLOR_BGR2LUV)
-	l, u, v = cv2.split(luv)
-	return u, v
-
-def threshold(img,T=150):
-	_, img = cv2.threshold(img,T,255,cv2.THRESH_BINARY)
-	return img
+def returnComp(img):
+    b, g, r = cv2.split(img)
+    return r, g, b
 
 def thresholdNew(img, lower_thresh, upper_thresh):
     _, lower_mask = cv2.threshold(img, lower_thresh, 255, cv2.THRESH_BINARY)
@@ -25,13 +20,6 @@ def findContour(img, min_area_threshold):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) >= min_area_threshold]
     return filtered_contours
-
-def findRangeContour(contours, lower_area, upper_area):
-    c = [cv2.contourArea(i) for i in contours if lower_area<cv2.contourArea(i)<upper_area]
-    return contours[c.index(max(c))]
-def findBiggestContour(contours):
-	c = [cv2.contourArea(i) for i in contours]
-	return contours[c.index(max(c))]
 
 def boundaryBox(img,contours):
 	x, y, w, h = cv2.boundingRect(np.vstack(contours))
@@ -72,15 +60,16 @@ while(True):
     if not ret:
         break  # If there are no more frames to read, break the loop
 
-    blueness, redness = returnUV(frame)
-    thresh_u = thresholdNew(blueness, 155, 190)
-    thresh_v = thresholdNew(redness, 142, 160)
+    Red, Green, Blue = returnComp(frame) # step 1 --> specify the redness of the image
+    thresholded_r = thresholdNew(Red, 185, 220)  #<-- redness thresholds
+    thresholded_g = thresholdNew(Green, 3, 50)  #<-- redness thresholds
+    thresholded_b = thresholdNew(Blue, 30, 80)   #<-- redness thresholds
 
-    common = cv2.bitwise_and(thresh_u, thresh_v)
-    common_contours = findContour(common, min_area_threshold=100)
+    common = cv2.bitwise_and(thresholded_r, cv2.bitwise_and(thresholded_g, thresholded_b))
+    common_contours = findContour(common, min_area_threshold=90)
 
     try:
-        if  150 < cv2.contourArea(np.vstack(common_contours)) < 1300:
+        if  140 < cv2.contourArea(np.vstack(common_contours)) < 1200:
             #print(cv2.contourArea(Range))
             img,sign = boundaryBox(frame,common_contours)
             x, y, w, _ = cv2.boundingRect(np.vstack(common_contours))
