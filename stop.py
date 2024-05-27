@@ -3,17 +3,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-modelPath = 'E:/mythesis/03-Classification/Models/TSModelV3'
+#import model
+modelPath = 'E:/mythesis/03-Classification/Models/TSModelV3' #<-- replace with your model directory
 model = keras.models.load_model(modelPath)
 
-def returnUV(img):
-	luv = cv2.cvtColor(img,cv2.COLOR_BGR2LUV)
-	l, u, v = cv2.split(luv)
-	return u, v
-
-def threshold(img,T=150):
-	_, img = cv2.threshold(img,T,255,cv2.THRESH_BINARY)
-	return img
+def returnComp(img):
+    b, g, r = cv2.split(img)
+    return r, g, b
 
 def thresholdNew(img, lower_thresh, upper_thresh):
     _, lower_mask = cv2.threshold(img, lower_thresh, 255, cv2.THRESH_BINARY)
@@ -26,17 +22,10 @@ def findContour(img, min_area_threshold):
     filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) >= min_area_threshold]
     return filtered_contours
 
-def findRangeContour(contours, lower_area, upper_area):
-    c = [cv2.contourArea(i) for i in contours if lower_area<cv2.contourArea(i)<upper_area]
-    return contours[c.index(max(c))]
-def findBiggestContour(contours):
-	c = [cv2.contourArea(i) for i in contours]
-	return contours[c.index(max(c))]
-
 def boundaryBox(img,contours):
 	x, y, w, h = cv2.boundingRect(np.vstack(contours))
-	img = cv2.rectangle(img, (x-5,y-5), (x+w+5,y+h+5), (0,255,0), 2)
-	sign = img[y-10:y+h+10, x-10:x+w+10]
+	img = cv2.rectangle(img, (x-15,y-5), (x+w+15,y+h+15), (0,255,0), 2)
+	sign = img[y-15:y+h+15, x-15:x+w+15]
 	return img, sign
 
 def preprocessingImageToClassifier(image=None,imageSize=40,mu=127.70122641509434,std=74.58174034218196):
@@ -61,44 +50,46 @@ labelToText = { 0:"Stop",
     			2:"Crosswalk"}
 
 #cap=cv2.VideoCapture(0) # capture video from camera
-file1='E:/mythesis//Test Video/FrontSchool.mp4'
-file2='E:/mythesis//Test Video/InSchool.mp4'
-file3='E:/mythesis/Test Video/joko.mp4'
+file1='E:/mythesis//Test Video/FrontSchool.mp4' #<-- replace with your video directory
+file2='E:/mythesis//Test Video/InSchool.mp4' #<-- replace with your video directory
+file3='E:/mythesis/Test Video/joko.mp4' #<-- replace with your video directory
 cap=cv2.VideoCapture(file2)
 
-while(True):
+while True:
     #_, frame = cap.read() # read captured video from camera
     ret, frame = cap.read()
     if not ret:
-        break  # If there are no more frames to read, break the loop
+        break # If there are no more frames to read, break the loop
 
-    blueness, redness = returnUV(frame)
-    thresh_u = thresholdNew(blueness, 100, 120)
-    thresh_v = thresholdNew(redness, 120, 140)
+    Red, Green, Blue = returnComp(frame) #specify the RGB of the image
+    thresholded_r = thresholdNew(Red, 35, 100) #<-- redness thresholds
+    thresholded_g = thresholdNew(Green, 0, 10) #<-- greenness thresholds
+    thresholded_b = thresholdNew(Blue, 10, 40) #<-- blueness thresholds
 
-    common = cv2.bitwise_and(thresh_u, thresh_v)
-    common_contours = findContour(common, min_area_threshold=100)
+    common = cv2.bitwise_and(thresholded_r, cv2.bitwise_and(thresholded_g, thresholded_b))
+
+    common_contours = findContour(common, min_area_threshold=20)
 
     try:
-        if  10 < cv2.contourArea(np.vstack(common_contours)) < 5000:
-            #print(cv2.contourArea(Range))
-            img,sign = boundaryBox(frame,common_contours)
+        if 150 < cv2.contourArea(np.vstack(common_contours)) < 1000:
+            img, sign = boundaryBox(frame, common_contours)
             x, y, w, _ = cv2.boundingRect(np.vstack(common_contours))
             img = cv2.putText(img, labelToText[predict(sign)] + str(prob(sign)) + '%', (x+w+10, y+15), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (36, 255, 12), 2)
-            cv2.imshow('frame',img)
-            #cv2.imwrite('E:/mythesis/result/joko result/frame_{:04d}.png'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), img)
-            print("Now,I see:",labelToText[predict(sign)])
+            cv2.imshow('frame', img)
+            #cv2.imwrite('frame_{:04d}.jpg'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), img)
+            print("Now, I see:", labelToText[predict(sign)])
+
         else:
-            cv2.imshow('frame',frame)
-            #cv2.imwrite('E:/mythesis/result/joko result/frame_{:04d}.png'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), frame)
+            cv2.imshow('frame', frame)
+            #cv2.imwrite('frame_{:04d}.jpg'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), frame)
     except Exception as e:
         print("Exception:", e)
         cv2.imshow('frame', frame)
-        #cv2.imwrite('E:/mythesis/result/joko result/frame_{:04d}.png'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), frame)
+        #cv2.imwrite('frame_{:04d}.jpg'.format(int(cap.get(cv2.CAP_PROP_POS_FRAMES))), frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(5) & 0xFF == ord('q'):
         break
 
-#python DetectionMain.py
+# Release the video capture object and close all windows
 cap.release()
 cv2.destroyAllWindows()
