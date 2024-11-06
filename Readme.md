@@ -22,5 +22,9 @@ Install the following dependencies:
 pip install tensorflow==2.11.0 opencv-python==4.7.0.72 numpy==1.22.4
 ```
 
-Here is a [video](https://youtu.be/c6WtbM8Vtpo?si=Qjgun2mkRO-HgHNW) for how it works!
-<img width="360" alt="image" src="https://github.com/user-attachments/assets/6ae7ac0b-941f-4a29-90ae-dfdc79cc8559">
+Here is a [video](https://youtu.be/c6WtbM8Vtpo?si=Qjgun2mkRO-HgHNW) for how it works on YouTube!
+
+<div style="float: left; margin-right: 10px; overflow: hidden; border-radius: 10px;">
+  <img width="360" alt="image" src="https://github.com/user-attachments/assets/6ae7ac0b-941f-4a29-90ae-dfdc79cc8559">
+</div>
+
