@@ -20,5 +20,6 @@ Install the following dependencies:
 
 ```bash
 pip install tensorflow==2.11.0 opencv-python==4.7.0.72 numpy==1.22.4
+```
 
 Here is a [video](https://youtu.be/c6WtbM8Vtpo?si=Qjgun2mkRO-HgHNW) for how it works!
